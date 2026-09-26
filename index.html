@@ -63,6 +63,9 @@ button{font:inherit;color:inherit}
 .coords-r{grid-row:2;display:grid;font-weight:800;font-size:10px;color:var(--muted);align-items:center;text-align:left}
 .grid-area{grid-column:2;grid-row:2;position:relative;box-shadow:var(--shadow)}
 .grid-area svg,.grid-area canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#caseView,#caseView *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.grid-area,.grid-area *{-webkit-tap-highlight-color:transparent;-webkit-user-drag:none}
+.grid-area svg{pointer-events:none}
 #ink{touch-action:none;cursor:crosshair}
 #overlay{pointer-events:none}
 
@@ -325,6 +328,10 @@ function setupInk(){
   cv.addEventListener('pointerup',onUp);
   cv.addEventListener('pointercancel',onUp);
   cv.addEventListener('contextmenu',e=>e.preventDefault());
+  // stop long-press text selection / magnifier on phones (iOS ignores CSS alone)
+  const stop=e=>{if(e.cancelable)e.preventDefault();};
+  ['touchstart','touchmove'].forEach(t=>$('gridArea').addEventListener(t,stop,{passive:false}));
+  document.addEventListener('selectstart',e=>{if(cur)e.preventDefault();});
 }
 function resizeInk(){
   if(!cur)return;
