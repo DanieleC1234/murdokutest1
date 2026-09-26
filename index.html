@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Murder Grid</title>
+<meta name="description" content="Five murder mystery logic puzzles. Find the murderer!">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Special+Elite&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#eee1c7; --paper-dark:#e2d1b0; --card:#fbf7ee; --ink:#2b211b; --muted:#6e5d4d;
+  --line:#cdb994; --wall:#3a2a1f; --red:#b3261e; --blue:#2f5d8a; --green:#3e7b43;
+  --shadow:0 2px 0 rgba(58,42,31,.12), 0 6px 18px rgba(58,42,31,.12);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font-family:Nunito,system-ui,-apple-system,sans-serif;-webkit-tap-highlight-color:transparent}
+body{min-height:100vh;background:
+  radial-gradient(circle at 20% 10%, rgba(255,255,255,.35), transparent 40%),
+  radial-gradient(circle at 90% 80%, rgba(160,120,70,.10), transparent 45%), var(--paper)}
+button{font:inherit;color:inherit}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px}
+.hidden{display:none!important}
+
+/* ---------- home ---------- */
+.home-head{text-align:center;padding:34px 0 10px}
+.logo{font-family:'Special Elite',monospace;font-size:clamp(38px,11vw,64px);letter-spacing:2px;line-height:1;margin:0;color:var(--ink)}
+.logo .blood{color:var(--red);margin-left:.25em}
+.tag{margin:10px 0 0;color:var(--muted);font-weight:600}
+.home-actions{display:flex;justify-content:center;gap:10px;margin:18px 0 8px}
+.pill{border:2px solid var(--ink);background:var(--card);border-radius:999px;padding:8px 16px;font-weight:800;cursor:pointer;box-shadow:0 2px 0 var(--ink)}
+.pill:active{transform:translateY(2px);box-shadow:none}
+.cases{display:grid;gap:14px;margin:18px 0 40px}
+.case{display:flex;gap:14px;align-items:center;text-align:left;background:var(--card);border:2px solid var(--ink);border-radius:14px;padding:14px;cursor:pointer;box-shadow:0 3px 0 var(--ink);position:relative}
+.case:active{transform:translateY(3px);box-shadow:none}
+.case-num{flex:0 0 58px;height:58px;border-radius:10px;background:var(--wall);color:#f5e7c8;display:grid;place-items:center;font-family:'Special Elite',monospace;font-size:28px}
+.case-title{font-family:'Special Elite',monospace;font-size:19px;margin:0 0 4px}
+.case-meta{font-size:14px;color:var(--muted);font-weight:700;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.3px;text-transform:uppercase}
+.chip.medium{background:#f3d98a;color:#5b4300}
+.chip.hard{background:#e9a393;color:#5a130d}
+.chip.done{background:#b9dcb0;color:#1e4a17}
+.chip.prog{background:#d7e3f1;color:#1d3b5c}
+.stamp{position:absolute;right:12px;top:10px;transform:rotate(8deg);border:3px solid var(--red);color:var(--red);font-family:'Special Elite',monospace;font-size:13px;padding:2px 6px;border-radius:4px;opacity:.85}
+
+/* ---------- case screen ---------- */
+.topbar{position:sticky;top:0;z-index:20;background:rgba(238,225,199,.94);backdrop-filter:blur(6px);border-bottom:2px solid var(--line)}
+.topbar .wrap{display:flex;align-items:center;gap:10px;height:54px}
+.iconbtn{width:40px;height:40px;border-radius:10px;border:2px solid var(--ink);background:var(--card);display:grid;place-items:center;cursor:pointer;flex:0 0 auto}
+.iconbtn svg{width:22px;height:22px}
+.tb-title{flex:1;min-width:0}
+.tb-title b{display:block;font-family:'Special Elite',monospace;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-title span{font-size:12px;color:var(--muted);font-weight:700}
+.intro{font-size:15px;line-height:1.5;margin:16px 0 12px;background:var(--card);border-left:5px solid var(--red);padding:10px 12px;border-radius:0 8px 8px 0}
+
+.board-wrap{overflow:auto;margin:6px -4px 0;padding:4px;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.board{display:grid;grid-template-columns:18px 1fr;grid-template-rows:18px auto;min-width:0}
+.board .coords-c{grid-column:2;display:grid;font-weight:800;font-size:12px;color:var(--muted);text-align:center;align-items:end}
+.board .coords-r{grid-row:2;display:grid;font-weight:800;font-size:12px;color:var(--muted);align-items:center;text-align:left}
+.grid-area{grid-column:2;grid-row:2;position:relative;aspect-ratio:1/1;border-radius:4px;box-shadow:var(--shadow)}
+.grid-area svg,.grid-area canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#ink{touch-action:none;cursor:crosshair}
+#overlay{pointer-events:none}
+.zoomnote{font-size:12px;color:var(--muted);text-align:center;margin:6px 0 0;font-weight:700}
+
+.legend{margin:16px 0 4px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.legend .box{background:var(--card);border-radius:10px;padding:8px 10px;border:2px solid var(--line)}
+.legend h4{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+.legend .ok h4{color:var(--green)} .legend .no h4{color:var(--red)}
+.legend .items{display:flex;flex-wrap:wrap;gap:6px 10px}
+.legend .it{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700}
+.legend .it svg{width:24px;height:24px;border-radius:4px;background:#efe3c9}
+
+h3.sec{font-family:'Special Elite',monospace;font-size:20px;margin:22px 0 10px;display:flex;align-items:center;gap:8px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+.card{background:var(--card);border-radius:12px;padding:10px 10px 12px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;position:relative}
+.card .photo{width:92px;background:#fff;padding:5px 5px 7px;box-shadow:0 1px 3px rgba(0,0,0,.25);transform:rotate(-2deg)}
+.card:nth-child(even) .photo{transform:rotate(2deg)}
+.card .photo svg{display:block;width:100%;height:auto}
+.card .nm{font-family:Caveat,cursive;font-size:28px;font-weight:700;line-height:1;margin:6px 0 4px;display:flex;align-items:center;gap:6px}
+.card .ini{font-family:Nunito,sans-serif;font-size:12px;font-weight:800;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center}
+.card .clue{font-size:14.5px;line-height:1.35;text-align:center;font-weight:600;background:#fff;border-radius:10px;padding:7px 9px;width:100%;border:1px solid #eadcc2}
+.card.victim{background:#2c2420;color:#f4e9d6}
+.card.victim .clue{background:#3d332d;border-color:#54473f;color:#f4e9d6}
+.card.victim .photo svg{filter:grayscale(1) contrast(1.05)}
+.card.victim .ini{background:var(--red)}
+h3.sec{scroll-margin-top:64px}
+.card .vstamp{position:absolute;top:8px;left:8px;transform:rotate(-12deg);z-index:2;background:#2c2420;color:#ff6b5e;border:2px solid #ff6b5e;font-family:'Special Elite',monospace;font-size:12px;padding:1px 5px;border-radius:3px}
+.globals{margin:16px 0 0;background:#d9e4ef;border:2px solid #9fb5cc;border-radius:12px;padding:10px 14px}
+.globals b{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#2f4d6b;margin-bottom:4px}
+.globals p{margin:4px 0;font-weight:700}
+
+.accuse{margin:22px 0 10px;background:#fff;border:2px dashed var(--ink);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;width:100%;text-align:left}
+.accuse .lbl{font-family:'Special Elite',monospace;font-size:18px}
+.accuse .ans{flex:1;border-bottom:2px solid var(--ink);font-family:Caveat,cursive;font-size:30px;min-height:36px;line-height:36px;color:var(--red)}
+.after{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 0}
+.bottom-space{height:110px}
+
+/* toolbar */
+.toolbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--wall);padding:8px 8px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(0,0,0,.2)}
+.toolbar .row{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.tool{background:#4d3a2c;border:0;border-radius:10px;color:#f5e7c8;padding:6px 2px 5px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:800;cursor:pointer}
+.tool svg{width:24px;height:24px}
+.tool.on{background:#f5e7c8;color:var(--wall)}
+.tool:active{filter:brightness(1.2)}
+
+/* modal + toast */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(30,20,14,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.sheet{background:var(--card);border-radius:16px;max-width:520px;width:100%;max-height:88vh;overflow:auto;padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.35);position:relative}
+.sheet h2{font-family:'Special Elite',monospace;margin:0 0 10px;font-size:24px}
+.sheet p,.sheet li{line-height:1.5}
+.sheet ol{padding-left:20px}
+.sheet .btns{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px}
+.btn{border:2px solid var(--ink);background:#fff;border-radius:10px;padding:10px 16px;font-weight:800;cursor:pointer;box-shadow:0 2px 0 var(--ink)}
+.btn.primary{background:var(--ink);color:#fff}
+.btn.danger{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 2px 0 #6d1510}
+.btn:active{transform:translateY(2px);box-shadow:none}
+.pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px;margin-top:10px}
+.pick button{background:#fff;border:2px solid var(--line);border-radius:10px;padding:6px;cursor:pointer;display:flex;flex-direction:column;align-items:center}
+.pick button svg{width:62px;height:auto}
+.pick button span{font-family:Caveat,cursive;font-size:22px;font-weight:700}
+.pick button.sel{border-color:var(--red);background:#fdecea}
+.result-stamp{display:inline-block;font-family:'Special Elite',monospace;font-size:26px;border:4px solid currentColor;padding:4px 12px;transform:rotate(-4deg);margin:4px 0 12px;border-radius:6px}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:60;background:var(--ink);color:#fff;padding:12px 16px;border-radius:12px;font-weight:700;max-width:min(92vw,460px);text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.close-x{position:absolute;right:12px;top:12px}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="f-chair" viewBox="0 0 100 100"><rect x="27" y="20" width="46" height="13" rx="5" fill="#6f4125"/><rect x="27" y="33" width="46" height="45" rx="7" fill="#a86a3d"/><rect x="33" y="39" width="34" height="33" rx="5" fill="#c68a58"/></symbol>
+    <symbol id="f-sofa" viewBox="0 0 100 100"><rect x="10" y="22" width="80" height="22" rx="9" fill="#346468"/><rect x="10" y="30" width="16" height="50" rx="7" fill="#346468"/><rect x="74" y="30" width="16" height="50" rx="7" fill="#346468"/><rect x="24" y="42" width="52" height="36" rx="6" fill="#55939a"/><line x1="50" y1="45" x2="50" y2="75" stroke="#346468" stroke-width="2.5"/></symbol>
+    <symbol id="f-bed" viewBox="0 0 100 100"><rect x="17" y="8" width="66" height="86" rx="6" fill="#7d4f33"/><rect x="21" y="12" width="58" height="78" rx="4" fill="#f6f2ea"/><rect x="28" y="16" width="44" height="17" rx="7" fill="#fff" stroke="#d8d0c2" stroke-width="2"/><rect x="21" y="40" width="58" height="50" rx="3" fill="#6689bd"/><path d="M21 47H79" stroke="#93b2dc" stroke-width="4"/></symbol>
+    <symbol id="f-rug" viewBox="0 0 100 100"><path d="M14 22v56M86 22v56" stroke="#d9b98a" stroke-width="3" stroke-dasharray="3 3"/><rect x="18" y="18" width="64" height="64" rx="3" fill="#b3443a"/><rect x="25" y="25" width="50" height="50" fill="none" stroke="#f1c98a" stroke-width="3"/><path d="M50 32L68 50L50 68L32 50Z" fill="#e8a15a"/><circle cx="50" cy="50" r="5" fill="#b3443a"/></symbol>
+    <symbol id="f-table" viewBox="0 0 100 100"><rect x="10" y="12" width="80" height="76" rx="7" fill="#6d4124"/><rect x="15" y="17" width="70" height="66" rx="5" fill="#95592f"/><path d="M20 34H80M20 50H80M20 66H80" stroke="#7f4b28" stroke-width="2.5"/></symbol>
+    <symbol id="f-plant" viewBox="0 0 100 100"><g fill="#4b8a3b"><ellipse cx="50" cy="26" rx="10" ry="22"/><ellipse cx="50" cy="74" rx="10" ry="22"/><ellipse cx="26" cy="50" rx="22" ry="10"/><ellipse cx="74" cy="50" rx="22" ry="10"/></g><g fill="#6cb04f"><ellipse cx="33" cy="33" rx="8" ry="20" transform="rotate(-45 33 33)"/><ellipse cx="67" cy="33" rx="8" ry="20" transform="rotate(45 67 33)"/><ellipse cx="33" cy="67" rx="8" ry="20" transform="rotate(45 33 67)"/><ellipse cx="67" cy="67" rx="8" ry="20" transform="rotate(-45 67 67)"/></g><circle cx="50" cy="50" r="15" fill="#9a5a34"/><circle cx="50" cy="50" r="10" fill="#5a3a22"/></symbol>
+    <symbol id="f-tv" viewBox="0 0 100 100"><rect x="12" y="24" width="76" height="48" rx="4" fill="#1f2328"/><rect x="17" y="29" width="66" height="38" fill="#3b4a5c"/><path d="M23 35h18" stroke="#7690b0" stroke-width="3"/><rect x="42" y="72" width="16" height="7" fill="#1f2328"/><rect x="30" y="79" width="40" height="6" rx="2" fill="#1f2328"/></symbol>
+    <symbol id="f-stove" viewBox="0 0 100 100"><rect x="12" y="12" width="76" height="76" rx="6" fill="#dcdfe2" stroke="#8f969d" stroke-width="3"/><g fill="#2b2f33" stroke="#c0392b" stroke-width="2.5"><circle cx="34" cy="34" r="11"/><circle cx="66" cy="34" r="11"/><circle cx="34" cy="66" r="11"/><circle cx="66" cy="66" r="11"/></g></symbol>
+    <symbol id="f-bath" viewBox="0 0 100 100"><rect x="18" y="8" width="64" height="84" rx="30" fill="#fdfdfd" stroke="#9eabb4" stroke-width="3"/><rect x="26" y="18" width="48" height="66" rx="22" fill="#8cc8e6"/><path d="M36 40q7 -5 14 0t14 0" stroke="#c7e7f6" stroke-width="3" fill="none"/><circle cx="50" cy="23" r="4" fill="#9eabb4"/></symbol>
+    <symbol id="f-shelf" viewBox="0 0 100 100"><rect x="8" y="20" width="84" height="60" rx="3" fill="#5f3620"/><rect x="12" y="24" width="76" height="52" fill="#7a4a2c"/><g><rect x="15" y="30" width="8" height="42" fill="#c0392b"/><rect x="24" y="34" width="7" height="38" fill="#2f6f9f"/><rect x="32" y="28" width="9" height="44" fill="#e0b04a"/><rect x="42" y="36" width="7" height="36" fill="#3e7b43"/><rect x="50" y="30" width="8" height="42" fill="#8e44ad"/><rect x="59" y="33" width="7" height="39" fill="#d35400"/><rect x="67" y="29" width="9" height="43" fill="#2c3e50"/><rect x="77" y="35" width="8" height="37" fill="#16a085"/></g></symbol>
+    <symbol id="f-tree" viewBox="0 0 100 100"><circle cx="50" cy="52" r="40" fill="#2f6b30" opacity=".35"/><circle cx="50" cy="48" r="36" fill="#3c7a37"/><circle cx="38" cy="38" r="19" fill="#4c9244"/><circle cx="63" cy="56" r="17" fill="#4c9244"/><circle cx="44" cy="61" r="11" fill="#5fa653"/><circle cx="62" cy="34" r="9" fill="#5fa653"/></symbol>
+  </defs>
+</svg>
+
+<!-- HOME -->
+<main id="home" class="wrap">
+  <header class="home-head">
+    <h1 class="logo">MURDER<span class="blood">GRID</span></h1>
+    <p class="tag">Sudoku meets murder mystery. Place every suspect, find the killer.</p>
+    <div class="home-actions"><button class="pill" id="btnRulesHome">How to play</button></div>
+  </header>
+  <section class="cases" id="caseList"></section>
+</main>
+
+<!-- CASE -->
+<div id="caseView" class="hidden">
+  <div class="topbar"><div class="wrap">
+    <button class="iconbtn" id="btnBack" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="tb-title"><b id="cTitle"></b><span id="cMeta"></span></div>
+    <button class="iconbtn" id="btnRules" aria-label="Rules"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.5 9.2a2.6 2.6 0 1 1 3.6 2.4c-.8.4-1.1.9-1.1 1.7v.4"/><circle cx="12" cy="17.2" r=".6" fill="currentColor"/></svg></button>
+  </div></div>
+  <main class="wrap">
+    <p class="intro" id="cIntro"></p>
+    <div class="board-wrap" id="boardWrap">
+      <div class="board" id="board">
+        <div class="coords-c" id="colsLbl"></div>
+        <div class="coords-r" id="rowsLbl"></div>
+        <div class="grid-area" id="gridArea">
+          <svg id="map" xmlns="http://www.w3.org/2000/svg"></svg>
+          <canvas id="ink"></canvas>
+          <svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+      </div>
+    </div>
+    <p class="zoomnote hidden" id="zoomNote">Zoomed in: use two fingers to move around the map.</p>
+    <div class="legend" id="legend"></div>
+
+    <h3 class="sec">Suspects</h3>
+    <div class="cards" id="cards"></div>
+    <div class="globals hidden" id="globals"></div>
+
+    <button class="accuse" id="btnAccuse"><span class="lbl">The murderer is…</span><span class="ans" id="accAns"></span></button>
+    <div class="after" id="afterBox"></div>
+    <div class="bottom-space"></div>
+  </main>
+  <nav class="toolbar"><div class="row">
+    <button class="tool on" id="tPen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19z"/><path d="M14.5 6.5l3 3"/></svg>Pen</button>
+    <button class="tool" id="tEraser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M8 20h12"/><path d="M4.6 14.6l9.9-9.9a2 2 0 0 1 2.8 0l2 2a2 2 0 0 1 0 2.8L11 18H7.4l-2.8-2.8a1 1 0 0 1 0-1.4z"/><path d="M9 10l5 5"/></svg>Eraser</button>
+    <button class="tool" id="tUndo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Undo</button>
+    <button class="tool" id="tClear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>Clear</button>
+    <button class="tool" id="tZoom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6"/></svg><span id="zoomLbl">Zoom</span></button>
+    <button class="tool" id="tHint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>Hint</button>
+  </div></nav>
+</div>
+
+<div id="modal" class="modal hidden"><div class="sheet" id="sheet"></div></div>
+<div id="toast" class="toast hidden"></div>
+
+<script>
+const LEVELS = [{"diff":"medium","n":6,"rooms":[{"type":"living","name":"Living Room"},{"type":"bedroom","name":"Bedroom"},{"type":"kitchen","name":"Kitchen"},{"type":"hall","name":"Hall"},{"type":"bathroom","name":"Bathroom"}],"room":[0,0,1,1,2,2,0,0,1,1,2,2,0,0,1,1,2,2,0,0,1,1,2,2,3,3,3,4,4,4,3,3,3,4,4,4],"furn":[null,"sofa",null,null,null,null,"rug",null,"plant",null,"plant",null,"table","chair","rug","bed",null,"stove","chair",null,null,"shelf","chair","table",null,"plant","rug",null,"rug",null,null,null,"rug",null,"plant","bath"],"persons":[{"name":"Alice","role":"suspect","clue":"Was in the Bedroom, next to a rug."},{"name":"Bruno","role":"suspect","clue":"Was not next to a plant."},{"name":"Clara","role":"suspect","clue":"Was not on any furniture."},{"name":"Derek","role":"suspect","clue":"Was diagonally next to Clara."},{"name":"Eva","role":"suspect","clue":"Was in the Living Room."},{"name":"Victor","role":"victim","clue":"Was standing on a rug."}],"globals":["Nobody was in the Hall."],"solution":[20,5,33,28,13,6],"murderer":4},{"diff":"medium","n":7,"rooms":[{"type":"living","name":"Living Room"},{"type":"garden","name":"Garden"},{"type":"kitchen","name":"Kitchen"},{"type":"guest","name":"Guest Room"},{"type":"dining","name":"Dining Room"},{"type":"bedroom","name":"Bedroom"},{"type":"bathroom","name":"Bathroom"}],"room":[3,3,0,0,0,4,4,3,3,0,0,0,4,4,3,3,0,0,0,4,4,2,2,5,5,5,1,1,2,2,5,5,5,1,1,2,2,6,6,6,1,1,2,2,6,6,6,1,1],"furn":[null,null,"plant",null,"chair","table",null,null,"bed",null,"chair","table","chair","table","rug","shelf","rug",null,"sofa",null,"chair",null,"stove",null,"rug","bed",null,"chair",null,null,"plant",null,null,null,"tree","table",null,null,"rug","plant",null,null,"table","chair","bath",null,null,"tree","tree"],"persons":[{"name":"Frank","role":"suspect","clue":"Was next to a plant."},{"name":"Gloria","role":"suspect","clue":"Was in the Dining Room."},{"name":"Hugo","role":"suspect","clue":"Was not on any furniture."},{"name":"Iris","role":"suspect","clue":"Was next to a bookcase."},{"name":"Jack","role":"suspect","clue":"Was in the Garden."},{"name":"Lucy","role":"suspect","clue":"Was next to a tree."},{"name":"Vanessa","role":"victim","clue":"Was in the Living Room, next to a chair."}],"globals":[],"solution":[29,12,21,16,41,46,3],"murderer":3},{"diff":"hard","n":8,"rooms":[{"type":"living","name":"Living Room"},{"type":"kitchen","name":"Kitchen"},{"type":"dining","name":"Dining Room"},{"type":"hall","name":"Hall"},{"type":"bedroom","name":"Bedroom"},{"type":"study","name":"Study"},{"type":"garden","name":"Garden"},{"type":"bathroom","name":"Bathroom"}],"room":[2,2,2,5,5,1,1,1,2,2,2,5,5,1,1,1,2,2,2,5,5,1,1,1,0,0,0,0,0,6,6,6,0,0,0,0,0,6,6,6,7,7,4,4,4,3,3,3,7,7,4,4,4,3,3,3,7,7,4,4,4,3,3,3],"furn":[null,"chair","table","shelf",null,"plant",null,null,null,null,null,"chair","table",null,"chair","stove","plant","chair","table",null,null,null,"table","chair",null,null,"rug","chair","chair",null,"tree","chair",null,"sofa","plant",null,"table",null,null,"tree",null,null,null,null,null,"rug",null,"plant","rug","bath","shelf","rug",null,null,"rug",null,"plant",null,"bed","rug","plant","plant",null,"rug"],"persons":[{"name":"Kate","role":"suspect","clue":"Was next to a tree."},{"name":"Leo","role":"suspect","clue":"Was in the Living Room, next to a chair."},{"name":"Mia","role":"suspect","clue":"Was not next to a plant."},{"name":"Nate","role":"suspect","clue":"Was in the Kitchen."},{"name":"Olivia","role":"suspect","clue":"Was next to a table."},{"name":"Paul","role":"suspect","clue":"Was in the Hall, next to a rug."},{"name":"Quinn","role":"suspect","clue":"Was in the Bedroom, next to a rug."},{"name":"Vincent","role":"victim","clue":"Was next to a plant."}],"globals":["Nobody was on a rug.","Nobody was on a chair."],"solution":[38,25,40,13,19,55,58,4],"murderer":4},{"diff":"hard","n":8,"rooms":[{"type":"living","name":"Living Room"},{"type":"bedroom","name":"Bedroom"},{"type":"kitchen","name":"Kitchen"},{"type":"hall","name":"Hall"},{"type":"study","name":"Study"},{"type":"guest","name":"Guest Room"},{"type":"bathroom","name":"Bathroom"}],"room":[4,4,0,0,0,1,1,1,4,4,0,0,0,1,1,1,4,4,0,0,0,1,1,1,4,4,0,0,0,1,1,1,2,2,2,2,2,6,6,6,2,2,2,2,2,6,6,6,3,3,3,3,3,5,5,5,3,3,3,3,3,5,5,5],"furn":[null,null,"sofa",null,null,"rug",null,null,"shelf","rug",null,null,"sofa","bed",null,"rug",null,null,"chair",null,"rug","shelf",null,"shelf","chair","table","table",null,"plant",null,"rug","shelf",null,null,null,null,"chair","rug",null,null,"plant","plant",null,"stove","table","plant",null,"bath","rug",null,null,"shelf",null,"rug","bed","shelf","rug","rug","shelf",null,"plant",null,null,null],"persons":[{"name":"Rosa","role":"suspect","clue":"Was in the Guest Room."},{"name":"Sam","role":"suspect","clue":"Was in the Hall, next to a bookcase."},{"name":"Tina","role":"suspect","clue":"Was diagonally next to Yara."},{"name":"Ulrich","role":"suspect","clue":"Was next to a table."},{"name":"Wendy","role":"suspect","clue":"Was next to a bookcase."},{"name":"Xavier","role":"suspect","clue":"Was standing on a rug."},{"name":"Yara","role":"suspect","clue":"Was next to a chair."},{"name":"Valerie","role":"victim","clue":"Was not next to a chair."}],"globals":["Exactly 3 people were in the Living Room."],"solution":[53,57,3,24,39,20,10,46],"murderer":4},{"diff":"hard","n":8,"rooms":[{"type":"living","name":"Living Room"},{"type":"study","name":"Study"},{"type":"dining","name":"Dining Room"},{"type":"guest","name":"Guest Room"},{"type":"kitchen","name":"Kitchen"},{"type":"bedroom","name":"Bedroom"},{"type":"hall","name":"Hall"},{"type":"bathroom","name":"Bathroom"}],"room":[1,1,6,6,6,7,7,7,1,1,6,6,6,7,7,7,1,1,2,2,2,3,3,3,1,1,2,2,2,3,3,3,1,1,2,2,2,3,3,3,0,0,0,0,5,5,4,4,0,0,0,0,5,5,4,4,0,0,0,0,5,5,4,4],"furn":[null,null,"plant",null,"rug",null,"bath",null,"shelf","chair","plant",null,null,"rug",null,"rug",null,"table",null,"table",null,null,null,null,null,"chair","chair",null,"table","rug",null,null,null,null,null,"plant","chair","rug","bed",null,null,"sofa",null,"rug",null,"plant","table","chair","tv",null,null,"chair",null,"rug","stove",null,"sofa","plant",null,"table","bed","shelf",null,null],"persons":[{"name":"Adam","role":"suspect","clue":"Was in the Dining Room, next to a table."},{"name":"Bella","role":"suspect","clue":"Was on the edge of the map."},{"name":"Colin","role":"suspect","clue":"Was next to a table."},{"name":"Daisy","role":"suspect","clue":"Shared a room with exactly 1 other person."},{"name":"Edgar","role":"suspect","clue":"Was next to a plant."},{"name":"Fiona","role":"suspect","clue":"Was in the Kitchen, next to a chair."},{"name":"George","role":"suspect","clue":"Was in the Kitchen."},{"name":"Vera","role":"victim","clue":"Was next to a plant."}],"globals":["Exactly 3 people were on a rug."],"solution":[18,4,29,32,43,55,62,9],"murderer":3}];
+const STORIES = [
+  {title:'The Birthday Party', intro:"Victor's 40th birthday party ended early: he was found dead before the cake was cut. Five guests were still in the house. Work out where everyone was standing, and who was alone with Victor."},
+  {title:'Dinner at the Villa', intro:"A stormy evening at the villa. Before dessert, Vanessa's body was found. Six dinner guests, six alibis, and only one of them was in the room with her."},
+  {title:'Blackwood Manor', intro:"The lights at Blackwood Manor flickered for a moment. When they came back on, Vincent was dead. Seven suspects, and every one of them claims they never moved."},
+  {title:'Murder on Maple Street', intro:"The housewarming party on Maple Street was supposed to be quiet. Then Valerie was found lifeless. The neighbours' stories don't quite add up."},
+  {title:'The Last Chess Game', intro:"Vera had never lost a game of chess, until tonight. Seven guests at her country house, and one of them made the final move."},
+];
+const FURN = {
+  chair:{name:'Chair',occ:true}, sofa:{name:'Sofa',occ:true}, bed:{name:'Bed',occ:true}, rug:{name:'Rug',occ:true},
+  table:{name:'Table',occ:false}, plant:{name:'Plant',occ:false}, tv:{name:'TV',occ:false}, stove:{name:'Stove',occ:false},
+  bath:{name:'Bathtub',occ:false}, shelf:{name:'Bookcase',occ:false}, tree:{name:'Tree',occ:false}
+};
+const FLOOR = {
+  living:['#f1dfa0','#ead48c'], kitchen:['#f5f4ef','#d9d8cf'], bedroom:['#e4c392','#d7b27e'], bathroom:['#cfe6ef','#b9d7e3'],
+  dining:['#ebd2a6','#dfc190'], study:['#d8e1bd','#c8d3a8'], garden:['#b7d68b','#a6c979'], guest:['#efd3cb','#e3c0b6'], hall:['#e4dac8','#d6cab4']
+};
+const COLS='ABCDEFGHIJ';
+const $=id=>document.getElementById(id);
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+};
+const stateKey=i=>'murdergrid-v1-case'+i;
+function loadState(i){return Object.assign({strokes:[],hints:[],solved:false,revealed:false,wrong:[]},store.get(stateKey(i),{}));}
+function saveState(){store.set(stateKey(cur.idx),cur.st);}
+
+function hashStr(s){let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
+function rngFrom(seed){let a=seed;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+/* ---------- mugshot avatars ---------- */
+function avatar(name){
+  const r=rngFrom(hashStr(name+'#look'));
+  const pick=a=>a[Math.floor(r()*a.length)];
+  const skin=pick(['#f6d3b3','#eab98f','#d39a6a','#b07a4f','#8a5a3a','#f1c7a1','#c98f63']);
+  const hair=pick(['#2a1c13','#4b2e1a','#7a4a24','#c9a15b','#161616','#8d8d8d','#a4432b','#e0c48a']);
+  const shirt=pick(['#2f5d8a','#b3443a','#3e7b43','#8e5a9e','#d08a2e','#4a4a4a','#1f7a7a','#c75c7a']);
+  const style=pick(['short','long','bun','bald','curly','cap','bob','spiky']);
+  const beard=r()<0.28, glasses=r()<0.25;
+  const bg=pick(['#d8c49d','#c9d3d9','#d9c3b8','#cfd6bf']);
+  let back='',front='',extra='';
+  if(style==='long') back=`<path d="M27 46 Q27 20 50 20 Q73 20 73 46 L76 92 L24 92Z" fill="${hair}"/>`;
+  if(style==='bob') back=`<path d="M28 46 Q28 20 50 20 Q72 20 72 46 L73 70 L27 70Z" fill="${hair}"/>`;
+  if(style==='bun') back=`<circle cx="50" cy="17" r="10" fill="${hair}"/>`;
+  if(style==='short'||style==='long'||style==='bob'||style==='bun') front=`<path d="M29 44 Q29 21 50 21 Q71 21 71 44 Q63 32 50 31 Q37 32 29 44Z" fill="${hair}"/>`;
+  if(style==='curly') front=`<g fill="${hair}"><circle cx="34" cy="32" r="9"/><circle cx="44" cy="25" r="9"/><circle cx="56" cy="25" r="9"/><circle cx="66" cy="32" r="9"/><circle cx="30" cy="42" r="7"/><circle cx="70" cy="42" r="7"/></g>`;
+  if(style==='spiky') front=`<path d="M29 42 L31 26 L38 30 L42 19 L49 27 L55 18 L60 28 L67 22 L68 32 L72 42 Q60 32 50 32 Q40 32 29 42Z" fill="${hair}"/>`;
+  if(style==='cap') front=`<path d="M28 40 Q28 20 50 20 Q72 20 72 40Z" fill="${shirt}"/><rect x="26" y="37" width="56" height="6" rx="3" fill="${shirt}" opacity=".85"/><circle cx="50" cy="21" r="2.5" fill="#fff" opacity=".6"/>`;
+  if(beard) extra+=`<path d="M31 50 Q33 74 50 76 Q67 74 69 50 Q66 62 50 63 Q34 62 31 50Z" fill="${hair}"/>`;
+  if(glasses) extra+=`<g fill="none" stroke="#1d1d1d" stroke-width="2.4"><circle cx="41" cy="48" r="6"/><circle cx="59" cy="48" r="6"/><path d="M47 48h6"/></g>`;
+  let lines='';for(let y=14;y<110;y+=14)lines+=`<path d="M0 ${y}H100" stroke="rgba(0,0,0,.13)" stroke-width="1"/>`;
+  return `<svg viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="110" fill="${bg}"/>${lines}${back}
+    <path d="M12 110 Q12 82 50 80 Q88 82 88 110Z" fill="${shirt}"/><path d="M40 80 Q50 90 60 80" fill="none" stroke="rgba(0,0,0,.18)" stroke-width="3"/>
+    <rect x="42" y="62" width="16" height="20" rx="4" fill="${skin}" style="filter:brightness(.9)"/>
+    <ellipse cx="29" cy="50" rx="4" ry="6" fill="${skin}"/><ellipse cx="71" cy="50" rx="4" ry="6" fill="${skin}"/>
+    <ellipse cx="50" cy="47" rx="21" ry="25" fill="${skin}"/>${front}${extra}</svg>`;
+}
+
+/* ---------- map rendering ---------- */
+function renderMap(L){
+  const n=L.n, S=100, W=n*S, svg=$('map');
+  svg.setAttribute('viewBox',`0 0 ${W} ${W}`);
+  let s='';
+  for(let k=0;k<n*n;k++){
+    const r=Math.floor(k/n), c=k%n, x=c*S, y=r*S, t=L.rooms[L.room[k]].type, [a,b]=FLOOR[t];
+    let fill=a;
+    if(t==='kitchen') fill=(r+c)%2?b:a;
+    s+=`<rect x="${x}" y="${y}" width="${S}" height="${S}" fill="${fill}"/>`;
+    if(t==='bedroom'||t==='dining') for(let j=1;j<4;j++) s+=`<path d="M${x} ${y+j*25}h${S}" stroke="${b}" stroke-width="2"/>`;
+    if(t==='bathroom') s+=`<path d="M${x+50} ${y}v${S}M${x} ${y+50}h${S}" stroke="${b}" stroke-width="2"/>`;
+    if(t==='living'||t==='hall'||t==='guest'||t==='study') s+=`<rect x="${x+6}" y="${y+6}" width="${S-12}" height="${S-12}" fill="none" stroke="${b}" stroke-width="2"/>`;
+    if(t==='garden') s+=`<g fill="${b}"><circle cx="${x+22}" cy="${y+30}" r="3"/><circle cx="${x+70}" cy="${y+22}" r="3"/><circle cx="${x+45}" cy="${y+62}" r="3"/><circle cx="${x+78}" cy="${y+80}" r="3"/><circle cx="${x+18}" cy="${y+84}" r="3"/></g>`;
+  }
+  for(let k=0;k<n*n;k++){ const f=L.furn[k]; if(!f)continue;
+    s+=`<use href="#f-${f}" x="${(k%n)*S}" y="${Math.floor(k/n)*S}" width="${S}" height="${S}"/>`; }
+  // thin grid
+  let g='';for(let i=1;i<n;i++)g+=`M${i*S} 0V${W}M0 ${i*S}H${W}`;
+  s+=`<path d="${g}" stroke="rgba(40,25,15,.22)" stroke-width="2"/>`;
+  // walls
+  let w='';
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++){const k=r*n+c;
+    if(c<n-1&&L.room[k]!==L.room[k+1]) w+=`M${(c+1)*S} ${r*S}V${(r+1)*S}`;
+    if(r<n-1&&L.room[k]!==L.room[k+n]) w+=`M${c*S} ${(r+1)*S}H${(c+1)*S}`;}
+  s+=`<path d="${w}" stroke="#3a2a1f" stroke-width="8" stroke-linecap="square"/>`;
+  s+=`<rect x="4" y="4" width="${W-8}" height="${W-8}" fill="none" stroke="#3a2a1f" stroke-width="10"/>`;
+  // room labels
+  const fs=n>=8?21:n>=7?19:17;
+  L.rooms.forEach((rm,i)=>{
+    const cells=[];for(let k=0;k<n*n;k++)if(L.room[k]===i)cells.push(k);
+    const maxR=Math.max(...cells.map(k=>Math.floor(k/n)));
+    const bottom=cells.filter(k=>Math.floor(k/n)===maxR);
+    const cx=(Math.min(...bottom.map(k=>k%n))+Math.max(...bottom.map(k=>k%n))+1)/2*S;
+    let cy=(maxR+1)*S; if(maxR===n-1) cy-=fs*0.9;
+    const txt=rm.name.toUpperCase(), tw=txt.length*fs*0.66+14;
+    s+=`<g><rect x="${cx-tw/2}" y="${cy-fs*0.75}" width="${tw}" height="${fs*1.5}" rx="4" fill="#fffdf6" stroke="#3a2a1f" stroke-width="2.5"/>
+      <text x="${cx}" y="${cy+fs*0.36}" text-anchor="middle" font-family="Nunito,sans-serif" font-weight="800" font-size="${fs}" fill="#3a2a1f" letter-spacing="0.5">${txt}</text></g>`;
+  });
+  svg.innerHTML=s;
+  $('overlay').setAttribute('viewBox',`0 0 ${W} ${W}`);
+  $('colsLbl').style.gridTemplateColumns=`repeat(${n},1fr)`;
+  $('rowsLbl').style.gridTemplateRows=`repeat(${n},1fr)`;
+  $('colsLbl').innerHTML=[...Array(n)].map((_,i)=>`<span>${COLS[i]}</span>`).join('');
+  $('rowsLbl').innerHTML=[...Array(n)].map((_,i)=>`<span>${i+1}</span>`).join('');
+}
+const cellName=(L,k)=>COLS[k%L.n]+(Math.floor(k/L.n)+1);
+
+function renderOverlay(){
+  const L=cur.L, n=L.n, S=100, st=cur.st; let s='';
+  const showSol=(st.solved||st.revealed)&&cur.showSolution;
+  L.persons.forEach((p,i)=>{
+    const k=L.solution[i], x=(k%n)*S+50, y=Math.floor(k/n)*S+50;
+    const hinted=st.hints.includes(i);
+    if(!showSol&&!hinted)return;
+    const isV=p.role==='victim', isM=i===L.murderer&&showSol;
+    const fill=isV?'#2c2420':isM?'#b3261e':'#2f5d8a';
+    s+=`<g opacity="${showSol?0.95:0.9}"><circle cx="${x}" cy="${y}" r="27" fill="${fill}" stroke="#fff" stroke-width="5" ${hinted&&!showSol?'stroke-dasharray="7 5"':''}/>
+      <text x="${x}" y="${y+11}" text-anchor="middle" font-family="Nunito,sans-serif" font-weight="800" font-size="32" fill="#fff">${p.name[0]}</text></g>`;
+    if(isM) s+=`<circle cx="${x}" cy="${y}" r="38" fill="none" stroke="#b3261e" stroke-width="5"/>`;
+  });
+  $('overlay').innerHTML=s;
+}
+
+/* ---------- ink (pen & eraser) ---------- */
+const ink={tool:'pen', canvas:null, ctx:null, w:0, h:0, curStroke:null, pointers:new Map(), pan:null};
+function setupInk(){
+  const cv=$('ink'); ink.canvas=cv; ink.ctx=cv.getContext('2d');
+  new ResizeObserver(()=>resizeInk()).observe($('gridArea'));
+  cv.addEventListener('pointerdown',onDown);
+  cv.addEventListener('pointermove',onMove);
+  cv.addEventListener('pointerup',onUp);
+  cv.addEventListener('pointercancel',onUp);
+  cv.addEventListener('contextmenu',e=>e.preventDefault());
+}
+function resizeInk(){
+  if(!cur)return;
+  const r=$('gridArea').getBoundingClientRect(), dpr=Math.min(window.devicePixelRatio||1,3);
+  ink.w=r.width; ink.h=r.height;
+  ink.canvas.width=Math.round(r.width*dpr); ink.canvas.height=Math.round(r.height*dpr);
+  ink.ctx.setTransform(dpr,0,0,dpr,0,0);
+  redrawInk();
+}
+function styleFor(st){
+  const c=ink.ctx;
+  c.lineCap='round'; c.lineJoin='round';
+  c.globalCompositeOperation=st.t==='eraser'?'destination-out':'source-over';
+  c.strokeStyle=c.fillStyle='#111';
+  c.lineWidth=st.w*ink.w;
+}
+function drawStroke(st,from){
+  const c=ink.ctx, p=st.p, W=ink.w, H=ink.h; styleFor(st);
+  if(p.length===2){c.beginPath();c.arc(p[0]*W,p[1]*H,st.w*W/2,0,Math.PI*2);c.fill();return;}
+  c.beginPath(); const s=Math.max(0,(from||0)-2);
+  c.moveTo(p[s]*W,p[s+1]*H);
+  for(let i=s+2;i<p.length;i+=2)c.lineTo(p[i]*W,p[i+1]*H);
+  c.stroke();
+}
+function redrawInk(){
+  const c=ink.ctx; c.save(); c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,ink.canvas.width,ink.canvas.height); c.restore();
+  for(const st of cur.st.strokes) drawStroke(st);
+  c.globalCompositeOperation='source-over';
+}
+function ptOf(e){const r=ink.canvas.getBoundingClientRect();return [+( (e.clientX-r.left)/r.width).toFixed(4), +((e.clientY-r.top)/r.height).toFixed(4)];}
+function onDown(e){
+  e.preventDefault();
+  try{ink.canvas.setPointerCapture(e.pointerId);}catch(_){}
+  ink.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ink.pointers.size===1){
+    const w=ink.tool==='pen'?(cur.L.n>=8?0.0062:0.007):(cur.L.n>=8?0.05:0.06);
+    ink.curStroke={t:ink.tool,w,p:ptOf(e)};
+    cur.st.strokes.push(ink.curStroke); drawStroke(ink.curStroke);
+  } else {
+    if(ink.curStroke){cur.st.strokes.pop();ink.curStroke=null;redrawInk();}
+    ink.pan=mid();
+  }
+}
+function mid(){let x=0,y=0;for(const p of ink.pointers.values()){x+=p.x;y+=p.y;}const n=ink.pointers.size;return {x:x/n,y:y/n};}
+function onMove(e){
+  if(!ink.pointers.has(e.pointerId))return;
+  ink.pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ink.pointers.size>=2&&ink.pan){
+    const m=mid(), bw=$('boardWrap');
+    bw.scrollLeft-=m.x-ink.pan.x; window.scrollBy(0,-(m.y-ink.pan.y)); ink.pan=m; return;
+  }
+  if(!ink.curStroke)return;
+  const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];
+  const from=ink.curStroke.p.length;
+  for(const ev of (evs.length?evs:[e])){const q=ptOf(ev);ink.curStroke.p.push(q[0],q[1]);}
+  drawStroke(ink.curStroke,from);
+}
+function onUp(e){
+  ink.pointers.delete(e.pointerId);
+  if(ink.pointers.size<2)ink.pan=null;
+  if(ink.pointers.size===0&&ink.curStroke){ink.curStroke=null;saveState();}
+  if(ink.pointers.size===0)ink.ctx.globalCompositeOperation='source-over';
+}
+function setTool(t){ink.tool=t;$('tPen').classList.toggle('on',t==='pen');$('tEraser').classList.toggle('on',t==='eraser');}
+
+/* ---------- UI ---------- */
+let cur=null, zoom=1;
+function renderHome(){
+  $('caseList').innerHTML=LEVELS.map((L,i)=>{
+    const st=loadState(i), story=STORIES[i];
+    const status=st.solved?'<span class="chip done">Solved</span>':st.revealed?'<span class="chip prog">Revealed</span>':(st.strokes.length?'<span class="chip prog">In progress</span>':'');
+    return `<button class="case" data-i="${i}"><div class="case-num">${i+1}</div><div>
+      <p class="case-title">${story.title}</p>
+      <div class="case-meta"><span class="chip ${L.diff}">${L.diff}</span><span>${L.n}×${L.n}</span><span>${L.persons.length-1} suspects</span>${status}</div></div>
+      ${st.solved?'<span class="stamp">CLOSED</span>':''}</button>`;}).join('');
+  document.querySelectorAll('.case').forEach(b=>b.onclick=()=>{location.hash='case-'+(+b.dataset.i+1);});
+}
+function openCase(i){
+  const L=LEVELS[i]; cur={idx:i,L,st:loadState(i),showSolution:true};
+  $('home').classList.add('hidden'); $('caseView').classList.remove('hidden');
+  $('cTitle').textContent=`Case ${i+1}: ${STORIES[i].title}`;
+  $('cMeta').textContent=`${L.diff==='hard'?'Hard':'Medium'} · ${L.n}×${L.n} · ${L.persons.length-1} suspects + victim`;
+  $('cIntro').textContent=STORIES[i].intro;
+  renderMap(L); renderLegend(L); renderCards(L); renderAccuse();
+  zoom=1; applyZoom(); setTool('pen');
+  window.scrollTo(0,0);
+  requestAnimationFrame(()=>{resizeInk();renderOverlay();});
+}
+function renderLegend(L){
+  const present=[...new Set(L.furn.filter(Boolean))];
+  const ic=t=>`<span class="it"><svg viewBox="0 0 100 100"><use href="#f-${t}"/></svg>${FURN[t].name}</span>`;
+  const ok=present.filter(t=>FURN[t].occ), no=present.filter(t=>!FURN[t].occ);
+  $('legend').innerHTML=`<div class="box ok"><h4>People can be on</h4><div class="items"><span class="it"><svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#e9dcbf"/></svg>Empty</span>${ok.map(ic).join('')}</div></div>
+    <div class="box no"><h4>Nobody can be on</h4><div class="items">${no.map(ic).join('')}</div></div>`;
+}
+function renderCards(L){
+  $('cards').innerHTML=L.persons.map(p=>`<div class="card ${p.role==='victim'?'victim':''}">
+    ${p.role==='victim'?'<span class="vstamp">VICTIM</span>':''}
+    <div class="photo">${avatar(p.name)}</div>
+    <div class="nm"><span class="ini">${p.name[0]}</span>${p.name}</div>
+    <div class="clue">${p.clue}</div></div>`).join('');
+  const g=$('globals');
+  if(L.globals.length){g.classList.remove('hidden');g.innerHTML='<b>What we also know</b>'+L.globals.map(x=>`<p>${x}</p>`).join('');}
+  else g.classList.add('hidden');
+}
+function renderAccuse(){
+  const {L,st}=cur;
+  $('accAns').textContent=st.solved?L.persons[L.murderer].name:'';
+  const a=$('afterBox'); let h='';
+  if(st.solved||st.revealed) h+=`<button class="btn" id="btnSol">${cur.showSolution?'Hide solution':'Show solution'}</button>`;
+  if(cur.idx<LEVELS.length-1&&(st.solved||st.revealed)) h+=`<button class="btn primary" id="btnNext">Next case →</button>`;
+  a.innerHTML=h;
+  if($('btnSol'))$('btnSol').onclick=()=>{cur.showSolution=!cur.showSolution;renderOverlay();renderAccuse();};
+  if($('btnNext'))$('btnNext').onclick=()=>{location.hash='case-'+(cur.idx+2);};
+}
+function applyZoom(){
+  $('board').style.width=(zoom*100)+'%';
+  $('zoomLbl').textContent=zoom===1?'Zoom':zoom+'×';
+  $('zoomNote').classList.toggle('hidden',zoom===1);
+}
+
+function modal(html){ $('sheet').innerHTML=html; $('modal').classList.remove('hidden'); }
+function closeModal(){ $('modal').classList.add('hidden'); }
+$('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+let toastT;
+function toast(msg,ms=3500){const t=$('toast');t.textContent=msg;t.classList.remove('hidden');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.add('hidden'),ms);}
+function ask(title,text,okLabel,danger,onOk){
+  modal(`<h2>${title}</h2><p>${text}</p><div class="btns"><button class="btn" id="mNo">Cancel</button><button class="btn ${danger?'danger':'primary'}" id="mOk">${okLabel}</button></div>`);
+  $('mNo').onclick=closeModal; $('mOk').onclick=()=>{closeModal();onOk();};
+}
+function showRules(){
+  const icons=t=>`<svg viewBox="0 0 100 100" style="width:26px;height:26px;vertical-align:middle;background:#efe3c9;border-radius:4px"><use href="#f-${t}"/></svg>`;
+  modal(`<h2>How to play</h2>
+  <p>Each case is a floor plan divided into rooms. Every suspect <b>and the victim</b> are somewhere on the map. Use the clues to find where each person was, then name the murderer.</p>
+  <ol>
+    <li><b>One person per row and one per column.</b> Every row and every column contains exactly one person.</li>
+    <li>People can stand on an empty square or be on a chair ${icons('chair')}, sofa ${icons('sofa')}, bed ${icons('bed')} or rug ${icons('rug')}.</li>
+    <li>Nobody can be on a table ${icons('table')}, plant ${icons('plant')}, TV ${icons('tv')}, stove ${icons('stove')}, bathtub ${icons('bath')}, bookcase ${icons('shelf')} or tree ${icons('tree')}.</li>
+    <li><b>"Next to"</b> means directly above, below, left or right, not diagonally.</li>
+    <li><b>"Alone"</b> means nobody else, the victim included, was in the same room.</li>
+    <li><b>The murderer is the only suspect who was in the same room as the victim.</b></li>
+  </ol>
+  <p><b>Tools:</b> write on the map with the <b>Pen</b> (for example the initials of who could be in a square, or an X), fix mistakes with the <b>Eraser</b> or <b>Undo</b>. <b>Zoom</b> makes the map bigger; then use two fingers to move around. <b>Hint</b> reveals where one person was.</p>
+  <p>Each case has exactly one solution, and you can always get there by logic alone. Your notes are saved on this device.</p>
+  <div class="btns"><button class="btn primary" id="mOk">Got it</button></div>`);
+  $('mOk').onclick=closeModal;
+}
+function doHint(){
+  const {L,st}=cur;
+  if(st.solved||st.revealed){toast('This case is already closed.');return;}
+  const order=[...L.persons.keys()]; const r=rngFrom(hashStr(STORIES[cur.idx].title));
+  for(let i=order.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
+  const next=order.find(i=>!st.hints.includes(i)&&i!==L.murderer);
+  if(next===undefined){toast('No more hints. You can do it!');return;}
+  ask('Use a hint?','A hint shows where one person was on the map.','Show hint',false,()=>{
+    st.hints.push(next); saveState(); renderOverlay();
+    const p=L.persons[next];
+    toast(`Hint: ${p.name}${p.role==='victim'?' (the victim)':''} was in square ${cellName(L,L.solution[next])}.`,5000);
+  });
+}
+function accuse(){
+  const {L,st}=cur;
+  if(st.solved){toast(`Case closed: it was ${L.persons[L.murderer].name}.`);return;}
+  const sus=L.persons.map((p,i)=>({p,i})).filter(x=>x.p.role==='suspect');
+  modal(`<h2>Who is the murderer?</h2><p>Choose the suspect who was alone with ${L.persons[L.persons.length-1].name}.</p>
+    <div class="pick">${sus.map(x=>`<button data-i="${x.i}">${avatar(x.p.name)}<span>${x.p.name}</span></button>`).join('')}</div>
+    <div class="btns"><button class="btn" id="mNo">Cancel</button><button class="btn danger" id="mOk" disabled>Accuse</button></div>`);
+  let sel=null;
+  document.querySelectorAll('.pick button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.pick button').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');sel=+b.dataset.i;$('mOk').disabled=false;});
+  $('mNo').onclick=closeModal;
+  $('mOk').onclick=()=>{ if(sel===null)return; verdict(sel); };
+}
+function verdict(i){
+  const {L,st}=cur, p=L.persons[i];
+  if(i===L.murderer){
+    st.solved=true; saveState(); cur.showSolution=true;
+    modal(`<div style="text-align:center"><span class="result-stamp" style="color:#3e7b43">CASE CLOSED</span>
+      <div style="width:110px;margin:0 auto">${avatar(p.name)}</div>
+      <p><b>${p.name}</b> did it! ${p.name} was the only suspect in the same room as ${L.persons[L.persons.length-1].name}.</p>
+      <p style="color:#6e5d4d">${st.hints.length?`Solved with ${st.hints.length} hint${st.hints.length>1?'s':''}.`:'Solved without hints. Great detective work!'}</p></div>
+      <div class="btns"><button class="btn" id="mOk">See the solution</button>${cur.idx<LEVELS.length-1?'<button class="btn primary" id="mNext">Next case →</button>':''}</div>`);
+    $('mOk').onclick=()=>{closeModal();renderOverlay();renderAccuse();$('gridArea').scrollIntoView({behavior:'smooth',block:'center'});};
+    if($('mNext'))$('mNext').onclick=()=>{closeModal();location.hash='case-'+(cur.idx+2);};
+    renderAccuse(); renderOverlay();
+  } else {
+    if(!st.wrong.includes(i))st.wrong.push(i); saveState();
+    modal(`<div style="text-align:center"><span class="result-stamp" style="color:#b3261e">WRONG</span>
+      <p><b>${p.name}</b> is innocent. Check the map again!</p></div>
+      <div class="btns"><button class="btn" id="mReveal">Reveal solution</button><button class="btn primary" id="mOk">Keep investigating</button></div>`);
+    $('mOk').onclick=closeModal;
+    $('mReveal').onclick=()=>{ask('Reveal the solution?','This will show where everyone was and who the murderer is.','Reveal',true,()=>{
+      st.revealed=true; saveState(); cur.showSolution=true; renderOverlay(); renderAccuse();
+      toast(`The murderer was ${L.persons[L.murderer].name}.`,5000);});};
+  }
+}
+
+$('btnRulesHome').onclick=showRules; $('btnRules').onclick=showRules;
+$('btnBack').onclick=()=>{location.hash='';};
+$('tPen').onclick=()=>setTool('pen');
+$('tEraser').onclick=()=>setTool('eraser');
+$('tUndo').onclick=()=>{if(cur.st.strokes.length){cur.st.strokes.pop();redrawInk();saveState();}};
+$('tClear').onclick=()=>{if(!cur.st.strokes.length)return;ask('Clear all notes?','This erases everything you wrote on this map.','Clear',true,()=>{cur.st.strokes=[];redrawInk();saveState();});};
+$('tZoom').onclick=()=>{zoom=zoom===1?1.5:zoom===1.5?2:1;applyZoom();};
+$('tHint').onclick=doHint;
+$('btnAccuse').onclick=accuse;
+
+function route(){
+  const m=location.hash.match(/case-(\d+)/);
+  const i=m?+m[1]-1:-1;
+  closeModal();
+  if(i>=0&&i<LEVELS.length) openCase(i);
+  else { cur=null; $('caseView').classList.add('hidden'); $('home').classList.remove('hidden'); renderHome(); window.scrollTo(0,0); }
+}
+setupInk();
+window.addEventListener('hashchange',route);
+route();
+if(!store.get('murdergrid-seen-rules',false)){store.set('murdergrid-seen-rules',true);showRules();}
+</script>
+</body>
+</html>
